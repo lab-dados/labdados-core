@@ -8,6 +8,18 @@ versionamento seguindo [SemVer](https://semver.org/lang/pt-BR/) — ver
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-10-01
+
+### Adicionado
+- Subpacote `embeddings`: `build_chunks` (mesmos readers da estruturação +
+  corte por caracteres com sobreposição), `embed` (endpoint
+  OpenAI-compatível — Azure AI Foundry, OpenAI, Ollama — ou
+  `sentence-transformers` local) e `build_result_zip` (`embeddings.parquet`,
+  `chunks.csv`, `_reproducibilidade/parametros.json`). Compartilhado entre o
+  serviço de embeddings do escritório e `labdados.embeddings()` no SDK.
+- Extras `[embeddings]` (openai, pandas, pyarrow, openpyxl) e
+  `[embeddings-local]` (+ sentence-transformers).
+
 ## [0.12.0] - 2026-10-01
 
 ### Adicionado

@@ -23,6 +23,7 @@ do backend, FastAPI app, etc.), ela **não** vem. Nem por DRY.
 | `estruturacao` | Pipeline LLM via DataFrameIt + readers (`txt/md/docx/csv/xlsx`) + prompts canônicos + `LlmConfig` cobrindo OpenAI/Azure/vLLM/Ollama. | `[estruturacao]` |
 | `ocr` | `extract` com 2 engines (`pymupdf-tesseract` / `paddleocr`), `formatters.join_pages`/`build_pages_zip`, descoberta automática do binário Tesseract. | `[ocr-cpu]` ou `[ocr-gpu]` |
 | `transcricao` | Formatadores TXT/SRT/VTT compartilhados, helpers de timestamp e `Segment` TypedDict. | (nenhum — engine fica nos consumidores) |
+| `embeddings` | `build_chunks` (readers + chunking), `embed` (OpenAI-compatível ou sentence-transformers) e `build_result_zip` (parquet + csv + parâmetros). | `[embeddings]` ou `[embeddings-local]` |
 | `anonimizacao` | `anonimizar` — detecta PII via `openai/privacy-filter` (HF Transformers, BIOES) e aplica mascaramento (`categoria`/`asteriscos`/`pseudonimo`). 8 categorias: pessoa, email, telefone, endereço, URL, conta, data, segredo. | `[anonimizacao-cpu]` ou `[anonimizacao-gpu]` |
 
 Para adicionar um subpacote novo, siga o padrão de `viabilidade/`:
