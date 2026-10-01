@@ -51,6 +51,12 @@ class LlmConfig:
       ``base_url`` (Azure endpoint), ``api_version``.
     - ``openai_compat``: ``model``, ``base_url``, ``api_key`` (pode ser
       ``"unused"``/``"EMPTY"`` para vLLM/Ollama).
+
+    Modelos de raciocínio (família GPT-5, ex.: ``gpt-5.6-luna`` no Azure
+    da FGV) só aceitam a ``temperature`` default — passe
+    ``temperature=None`` para omitir o parâmetro. ``reasoning_effort``
+    (``"minimal"``/``"low"``/``"medium"``/``"high"``) só é enviado se
+    definido.
     """
 
     model: str
@@ -58,8 +64,9 @@ class LlmConfig:
     api_key: str | None = None
     base_url: str | None = None
     api_version: str | None = None
-    temperature: float = 0.0
+    temperature: float | None = 0.0
     max_tokens: int = 4096
+    reasoning_effort: str | None = None
     stream: bool = False
     timeout: float | None = 120.0
     extra: dict[str, Any] = field(default_factory=dict)
@@ -180,13 +187,16 @@ def to_dataframeit_kwargs(config: LlmConfig) -> dict[str, Any]:
     - Qualquer outro string é repassado direto pro
       ``init_chat_model`` (``"google_genai"``, ``"anthropic"``, etc.).
     """
-    model_kwargs: dict[str, Any] = {}
-    if config.temperature is not None:
-        model_kwargs["temperature"] = config.temperature
+    # ``temperature`` vai sempre, mesmo ``None``: o DataFrameIt fixa
+    # ``temperature=0`` por default e só um ``None`` explícito faz o
+    # ChatOpenAI omitir o parâmetro (modelos de raciocínio rejeitam 0).
+    model_kwargs: dict[str, Any] = {"temperature": config.temperature}
     if config.max_tokens is not None:
         model_kwargs["max_tokens"] = config.max_tokens
     if config.timeout is not None:
         model_kwargs["timeout"] = config.timeout
+    if config.reasoning_effort is not None:
+        model_kwargs["reasoning_effort"] = config.reasoning_effort
     if config.stream:
         model_kwargs["streaming"] = True
     model_kwargs.update(config.extra)
@@ -245,11 +255,20 @@ def call_llm(
     create_kwargs: dict[str, Any] = {
         "model": config.model,
         "messages": messages,
-        "temperature": config.temperature,
-        "max_tokens": config.max_tokens,
         "response_format": response_format,
-        **config.extra,
     }
+    # OpenAI/Azure deprecaram ``max_tokens`` em favor de
+    # ``max_completion_tokens`` (modelos de raciocínio rejeitam o antigo com
+    # 400). Servidores OpenAI-compat (vLLM, Ollama) seguem com ``max_tokens``.
+    if config.provider in ("openai", "azure_openai"):
+        create_kwargs["max_completion_tokens"] = config.max_tokens
+    else:
+        create_kwargs["max_tokens"] = config.max_tokens
+    if config.temperature is not None:
+        create_kwargs["temperature"] = config.temperature
+    if config.reasoning_effort is not None:
+        create_kwargs["reasoning_effort"] = config.reasoning_effort
+    create_kwargs.update(config.extra)
 
     if config.stream:
         create_kwargs["stream"] = True

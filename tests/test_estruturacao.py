@@ -140,6 +140,49 @@ def test_strictify_schema_ignores_non_dict():
     assert _strictify_schema("x") == "x"
 
 
+def test_call_llm_openai_uses_max_completion_tokens(monkeypatch):
+    client = _patch_client(monkeypatch)
+    config = LlmConfig(
+        provider="azure_openai",
+        model="analise",
+        base_url="https://x.openai.azure.com/",
+        api_version="2024-12-01-preview",
+        max_tokens=1234,
+    )
+    call_llm([{"role": "user", "content": "hi"}], config=config)
+    kw = client.chat.completions.create.call_args.kwargs
+    assert kw["max_completion_tokens"] == 1234
+    assert "max_tokens" not in kw
+    assert kw["temperature"] == 0.0
+
+
+def test_call_llm_openai_compat_keeps_max_tokens(monkeypatch):
+    client = _patch_client(monkeypatch)
+    config = LlmConfig(provider="openai_compat", model="llama3.1", base_url="http://x/v1", max_tokens=99)
+    call_llm([{"role": "user", "content": "hi"}], config=config)
+    kw = client.chat.completions.create.call_args.kwargs
+    assert kw["max_tokens"] == 99
+    assert "max_completion_tokens" not in kw
+
+
+def test_call_llm_reasoning_model_omits_temperature(monkeypatch):
+    client = _patch_client(monkeypatch)
+    config = LlmConfig(model="gpt-5.6-luna", temperature=None, reasoning_effort="low")
+    call_llm([{"role": "user", "content": "hi"}], config=config)
+    kw = client.chat.completions.create.call_args.kwargs
+    assert "temperature" not in kw
+    assert kw["reasoning_effort"] == "low"
+
+
+def test_to_dataframeit_kwargs_reasoning_model():
+    kwargs = to_dataframeit_kwargs(
+        LlmConfig(model="gpt-5.6-luna", api_key="sk-x", temperature=None, reasoning_effort="low")
+    )
+    # None explícito sobrescreve o temperature=0 default do DataFrameIt
+    assert kwargs["model_kwargs"]["temperature"] is None
+    assert kwargs["model_kwargs"]["reasoning_effort"] == "low"
+
+
 def test_call_llm_invalid_json_returns_raw(monkeypatch):
     _patch_client(monkeypatch, "isso não é json {")
     config = LlmConfig(model="gpt-4o-mini")
