@@ -8,6 +8,23 @@ versionamento seguindo [SemVer](https://semver.org/lang/pt-BR/) — ver
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-01
+
+### Adicionado
+- `LlmConfig.reasoning_effort` (opcional) — repassado para `call_llm` e
+  `to_dataframeit_kwargs` só quando definido.
+- `LlmConfig.temperature` aceita `None` para omitir o parâmetro. Modelos
+  de raciocínio (família GPT-5, ex.: `gpt-5.6-luna` no Azure da FGV)
+  respondem 400 a qualquer `temperature` diferente da default.
+
+### Alterado
+- `call_llm` envia `max_completion_tokens` (em vez de `max_tokens`) para
+  os providers `openai` e `azure_openai`; modelos de raciocínio rejeitam
+  `max_tokens`. `openai_compat` (vLLM, Ollama) continua com `max_tokens`.
+- `to_dataframeit_kwargs` sempre repassa `temperature` (inclusive `None`):
+  o DataFrameIt fixa `temperature=0` por default e só um `None` explícito
+  faz o ChatOpenAI omitir o parâmetro.
+
 ## [0.11.1] - 2026-05-04
 
 ### Corrigido
